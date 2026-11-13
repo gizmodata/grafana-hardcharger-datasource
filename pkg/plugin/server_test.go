@@ -46,9 +46,10 @@ const (
 	adminIdentity = "grafana@plugin-test.example"
 )
 
-// timeoutScale stretches the tests' waits on a slow machine.
+// timeoutScale stretches the tests' waits on a slow machine: HARDCHARGER_TEST_TIMEOUT_SCALE=3
+// makes every one three times as long.
 var timeoutScale = func() float64 {
-	if scale, err := strconv.ParseFloat(os.Getenv("GRAFANA_HARDCHARGER_TEST_TIMEOUT_SCALE"), 64); err == nil && scale > 0 {
+	if scale, err := strconv.ParseFloat(os.Getenv("HARDCHARGER_TEST_TIMEOUT_SCALE"), 64); err == nil && scale > 0 {
 		return scale
 	}
 	return 1
@@ -166,7 +167,7 @@ func startServer(ca *testCA, extraArgs ...string) (*testServer, error) {
 	server := &testServer{Port: port, Password: hex.EncodeToString(secret), CA: ca, TLS: ca != nil,
 		logPath: filepath.Join(serverDir, fmt.Sprintf("server-%d.log", index))}
 	args := []string{"--host", "127.0.0.1", "--port", strconv.Itoa(port), "--health-port", "0",
-		"--database", ":memory:", "--stop-on-stdin-close", "--no-banner"}
+		"--database", ":memory:", "--stop-on-stdin-close", "--no-graceful-shutdown", "--no-banner"}
 	if ca != nil {
 		args = append(args, "--tls-cert", ca.serverCertFile, "--tls-key", ca.serverKeyFile)
 	}
@@ -182,7 +183,8 @@ func startServer(ca *testCA, extraArgs ...string) (*testServer, error) {
 	server.cmd.Dir = serverDir
 	server.cmd.Env = append(os.Environ(), "HARDCHARGER_ADMIN_USERNAME="+testUsername, "HARDCHARGER_ADMIN_PASSWORD="+server.Password)
 	server.cmd.Stdout, server.cmd.Stderr = logFile, logFile
-	// The server stops when this pipe closes, so it never outlives the tests.
+	// The server stops when this pipe closes, at once (no graceful shutdown), so it never outlives
+	// the tests, whatever was still running in it.
 	stdin, err := server.cmd.StdinPipe()
 	if err != nil {
 		return nil, err

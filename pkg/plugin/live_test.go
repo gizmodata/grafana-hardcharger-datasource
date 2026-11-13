@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -18,6 +19,15 @@ import (
 
 	"github.com/gizmodata/grafana-hardcharger-datasource/pkg/models"
 )
+
+// uniqueTag makes a statement findable in the server's list of statements:
+// name, and a suffix no other run of the test has (the servers are shared by
+// every test of the process, and by every -count iteration).
+func uniqueTag(name string) string {
+	return fmt.Sprintf("%s-%d", name, tagCounter.Add(1)+time.Now().UnixNano())
+}
+
+var tagCounter atomic.Int64
 
 // endlessQuery never finishes on its own within a test: only a cancel ends
 // it. tag makes it findable in the server's list of statements.
@@ -212,7 +222,8 @@ func TestLiveRowLimit(t *testing.T) {
 	limited := newLiveDatasource(t, server, map[string]any{"maxRows": 1000}, nil)
 
 	started := time.Now()
-	frame := mustQuery(t, limited, "SELECT i, 'row ' || i AS s FROM range(100000000000) t(i) /* live-row-limit */", queryOptions{})
+	tag := uniqueTag("live-row-limit")
+	frame := mustQuery(t, limited, "SELECT i, 'row ' || i AS s FROM range(100000000000) t(i) /* "+tag+" */", queryOptions{})
 	elapsed := time.Since(started)
 	if frame.Rows() != 1000 {
 		t.Fatalf("got %d rows, want 1000", frame.Rows())
@@ -229,7 +240,7 @@ func TestLiveRowLimit(t *testing.T) {
 		t.Errorf("the capped query took %s", elapsed)
 	}
 	// And so did the server: the statement is cancelled, not still producing rows.
-	waitForStatus(t, admin, "live-row-limit", "cancelled")
+	waitForStatus(t, admin, tag, "cancelled")
 
 	// Exactly the cap, and one under and over it.
 	for rows, truncated := range map[int]bool{999: false, 1000: false, 1001: true} {
@@ -249,12 +260,13 @@ func TestLiveRowLimit(t *testing.T) {
 // A query that runs into the data source's time limit is cancelled on the
 // server, and reported as the query's (408, downstream).
 func TestLiveQueryTimeoutCancelsOnTheServer(t *testing.T) {
+	tag := uniqueTag("live-timeout")
 	server := plainServer(t)
 	admin := newLiveDatasource(t, server, nil, nil)
 	impatient := newLiveDatasource(t, server, map[string]any{"queryTimeout": 1.5}, nil)
 
 	started := time.Now()
-	result := runQuery(t, impatient, endlessQuery("live-timeout"), queryOptions{})
+	result := runQuery(t, impatient, endlessQuery(tag), queryOptions{})
 	elapsed := time.Since(started)
 	wantFailure(t, result, 408, backend.ErrorSourceDownstream, "ran longer than the data source's query timeout (1.5s)",
 		"cancelled on the server")
@@ -262,7 +274,7 @@ func TestLiveQueryTimeoutCancelsOnTheServer(t *testing.T) {
 		t.Errorf("the query returned after %s", elapsed)
 	}
 	// The server's own record: the statement ran, and was cancelled.
-	reason := waitForStatus(t, admin, "live-timeout", "cancelled")
+	reason := waitForStatus(t, admin, tag, "cancelled")
 	if reason != "client" && reason != "session_closed" {
 		t.Errorf("cancel reason %q", reason)
 	}
@@ -276,6 +288,7 @@ func TestLiveQueryTimeoutCancelsOnTheServer(t *testing.T) {
 // statement stops on the server. The control: until the cancel, the server
 // shows the same statement running.
 func TestLiveContextCancelStopsTheStatement(t *testing.T) {
+	tag := uniqueTag("live-cancel")
 	server := plainServer(t)
 	admin := newLiveDatasource(t, server, nil, nil)
 	ds := newLiveDatasource(t, server, map[string]any{"queryTimeout": 0}, nil) // no time limit: only the cancel ends it
@@ -283,9 +296,9 @@ func TestLiveContextCancelStopsTheStatement(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	finished := make(chan backend.DataResponse, 1)
-	go func() { finished <- runQuery(t, ds, endlessQuery("live-cancel"), queryOptions{Context: ctx}) }()
+	go func() { finished <- runQuery(t, ds, endlessQuery(tag), queryOptions{Context: ctx}) }()
 
-	waitForStatus(t, admin, "live-cancel", "executing")
+	waitForStatus(t, admin, tag, "executing")
 	// It keeps running while nobody cancels it.
 	time.Sleep(scaled(1500 * time.Millisecond))
 	select {
@@ -293,7 +306,7 @@ func TestLiveContextCancelStopsTheStatement(t *testing.T) {
 		t.Fatalf("the query ended by itself: %v", result.Error)
 	default:
 	}
-	if status, _, _ := statementStatus(t, admin, "live-cancel"); status != "executing" {
+	if status, _, _ := statementStatus(t, admin, tag); status != "executing" {
 		t.Fatalf("before the cancel the statement is %q", status)
 	}
 
@@ -308,13 +321,14 @@ func TestLiveContextCancelStopsTheStatement(t *testing.T) {
 	if waited := time.Since(cancelled); waited > scaled(10*time.Second) {
 		t.Errorf("returning took %s", waited)
 	}
-	waitForStatus(t, admin, "live-cancel", "cancelled")
+	waitForStatus(t, admin, tag, "cancelled")
 }
 
 // The server's own statement timeout is set with each statement, a little
 // after the plugin's time limit. Here the margin is turned around, so the
 // server's limit comes first: the server ends the statement and says why.
 func TestLiveServerStatementTimeout(t *testing.T) {
+	tag := uniqueTag("live-server-timeout")
 	server := plainServer(t)
 	admin := newLiveDatasource(t, server, nil, nil)
 	ds := newLiveDatasource(t, server, map[string]any{"queryTimeout": 30}, nil)
@@ -323,7 +337,7 @@ func TestLiveServerStatementTimeout(t *testing.T) {
 	defer func() { serverTimeoutMargin = previous }()
 
 	started := time.Now()
-	result := runQuery(t, ds, endlessQuery("live-server-timeout"), queryOptions{})
+	result := runQuery(t, ds, endlessQuery(tag), queryOptions{})
 	wantFailure(t, result, 408, backend.ErrorSourceDownstream, "statement_timeout")
 	if elapsed := time.Since(started); elapsed < 900*time.Millisecond || elapsed > scaled(15*time.Second) {
 		t.Errorf("the server's timeout of 1 s ended the query after %s", elapsed)
@@ -331,7 +345,7 @@ func TestLiveServerStatementTimeout(t *testing.T) {
 	if strings.Contains(result.Error.Error(), "the data source's query timeout") {
 		t.Errorf("the plugin's own limit fired, not the server's: %v", result.Error)
 	}
-	waitForStatus(t, admin, "live-server-timeout", "timeout")
+	waitForStatus(t, admin, tag, "timeout")
 }
 
 func TestLiveMacros(t *testing.T) {
@@ -607,9 +621,10 @@ func TestLiveCatalogAndSchema(t *testing.T) {
 func TestLiveQueryTag(t *testing.T) {
 	server := plainServer(t)
 	ds := newLiveDatasource(t, server, nil, nil)
-	mustQuery(t, ds, "SELECT 1 /* live-tag */", queryOptions{User: "alice", Headers: map[string]string{
+	tagged, untagged := uniqueTag("live-tag"), uniqueTag("live-no-tag")
+	mustQuery(t, ds, "SELECT 1 /* "+tagged+" */", queryOptions{User: "alice", Headers: map[string]string{
 		"http_X-Dashboard-Uid": "dash-uid-1", "http_X-Panel-Id": "42", "http_X-Rule-Uid": "rule-7", "FromAlert": "true"}})
-	status, _, tagText := statementStatus(t, ds, "live-tag")
+	status, _, tagText := statementStatus(t, ds, tagged)
 	var tag map[string]any
 	if err := json.Unmarshal([]byte(tagText), &tag); err != nil {
 		t.Fatalf("the server's query_tag is %q (%v), status %q", tagText, err, status)
@@ -623,8 +638,8 @@ func TestLiveQueryTag(t *testing.T) {
 	}
 	// Turned off: the server records no tag.
 	silent := newLiveDatasource(t, server, map[string]any{"tagQueries": false}, nil)
-	mustQuery(t, silent, "SELECT 1 /* live-no-tag */", queryOptions{User: "alice"})
-	if status, _, tagText := statementStatus(t, ds, "live-no-tag"); status != "success" || tagText != "" {
+	mustQuery(t, silent, "SELECT 1 /* "+untagged+" */", queryOptions{User: "alice"})
+	if status, _, tagText := statementStatus(t, ds, untagged); status != "success" || tagText != "" {
 		t.Errorf("with tagging off the server has status %q and tag %q", status, tagText)
 	}
 }
@@ -828,13 +843,15 @@ func TestLiveConcurrentQueries(t *testing.T) {
 // Dispose (new settings were saved) lets a query that is running finish, and
 // closes the handle after it.
 func TestLiveDisposeWaitsForRunningQueries(t *testing.T) {
+	tag := uniqueTag("live-dispose")
 	server := plainServer(t)
 	admin := newLiveDatasource(t, server, nil, nil)
 	ds := newLiveDatasource(t, server, nil, nil)
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // whatever happens below, the endless query ends
 	finished := make(chan backend.DataResponse, 1)
-	go func() { finished <- runQuery(t, ds, endlessQuery("live-dispose"), queryOptions{Context: ctx}) }()
-	waitForStatus(t, admin, "live-dispose", "executing")
+	go func() { finished <- runQuery(t, ds, endlessQuery(tag), queryOptions{Context: ctx}) }()
+	waitForStatus(t, admin, tag, "executing")
 
 	disposed := make(chan time.Time, 1)
 	go func() { ds.Dispose(); disposed <- time.Now() }()
@@ -843,7 +860,7 @@ func TestLiveDisposeWaitsForRunningQueries(t *testing.T) {
 		t.Fatal("Dispose returned while a query was running")
 	case <-time.After(scaled(1500 * time.Millisecond)):
 	}
-	if status, _, _ := statementStatus(t, admin, "live-dispose"); status != "executing" {
+	if status, _, _ := statementStatus(t, admin, tag); status != "executing" {
 		t.Fatalf("while Dispose waits the statement is %q", status)
 	}
 	cancel() // the query ends; Dispose may go on
