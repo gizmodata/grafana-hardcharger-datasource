@@ -1,0 +1,352 @@
+{
+  "uid": "hardcharger-overview",
+  "title": "Hardcharger overview",
+  "description": "A sample dashboard over the development stack's demo data: time series, gap filling, a variable, annotations and DuckDB's types.",
+  "tags": [
+    "hardcharger",
+    "sample"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "host",
+        "label": "Host",
+        "type": "query",
+        "datasource": {
+          "type": "gizmodata-hardcharger-datasource",
+          "uid": "hardcharger-dev"
+        },
+        "query": {
+          "refId": "host",
+          "rawSql": "SELECT DISTINCT host FROM demo.metrics ORDER BY host"
+        },
+        "definition": "SELECT DISTINCT host FROM demo.metrics ORDER BY host",
+        "multi": true,
+        "includeAll": true,
+        "refresh": 1,
+        "sort": 0,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": []
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "name": "Deployments",
+        "datasource": {
+          "type": "gizmodata-hardcharger-datasource",
+          "uid": "hardcharger-dev"
+        },
+        "enable": true,
+        "iconColor": "orange",
+        "target": {
+          "refId": "Anno",
+          "datasource": {
+            "type": "gizmodata-hardcharger-datasource",
+            "uid": "hardcharger-dev"
+          },
+          "rawSql": "SELECT ts AS time, message AS text, tags\nFROM demo.events\nWHERE $__timeFilter(ts)",
+          "format": "table"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "CPU by host",
+      "description": "Long rows (time, host, value) become one series per host.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "gizmodata-hardcharger-datasource",
+        "uid": "hardcharger-dev"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gizmodata-hardcharger-datasource",
+            "uid": "hardcharger-dev"
+          },
+          "rawSql": "SELECT $__timeGroup(ts, $__interval) AS time, host, avg(cpu_percent) AS cpu\nFROM demo.metrics\nWHERE $__timeFilter(ts) AND host IN ($host)\nGROUP BY 1, 2\nORDER BY 1",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Requests in range",
+      "description": "",
+      "type": "stat",
+      "datasource": {
+        "type": "gizmodata-hardcharger-datasource",
+        "uid": "hardcharger-dev"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gizmodata-hardcharger-datasource",
+            "uid": "hardcharger-dev"
+          },
+          "rawSql": "SELECT sum(requests) AS requests\nFROM demo.metrics\nWHERE $__timeFilter(ts) AND host IN ($host)",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Average CPU",
+      "description": "",
+      "type": "gauge",
+      "datasource": {
+        "type": "gizmodata-hardcharger-datasource",
+        "uid": "hardcharger-dev"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gizmodata-hardcharger-datasource",
+            "uid": "hardcharger-dev"
+          },
+          "rawSql": "SELECT avg(cpu_percent) AS cpu\nFROM demo.metrics\nWHERE $__timeFilter(ts) AND host IN ($host)",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Requests by region",
+      "description": "The third argument of $__timeGroup fills buckets without rows.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "gizmodata-hardcharger-datasource",
+        "uid": "hardcharger-dev"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gizmodata-hardcharger-datasource",
+            "uid": "hardcharger-dev"
+          },
+          "rawSql": "SELECT $__timeGroup(ts, $__interval, 0) AS time, region, sum(requests) AS requests\nFROM demo.metrics\nWHERE $__timeFilter(ts) AND host IN ($host)\nGROUP BY 1, 2\nORDER BY 1",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Latest reading per host",
+      "description": "",
+      "type": "table",
+      "datasource": {
+        "type": "gizmodata-hardcharger-datasource",
+        "uid": "hardcharger-dev"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gizmodata-hardcharger-datasource",
+            "uid": "hardcharger-dev"
+          },
+          "rawSql": "SELECT host, region, max(ts) AS latest, arg_max(cpu_percent, ts) AS cpu_percent,\n       arg_max(memory_mb, ts) AS memory_mb, sum(requests) AS requests_in_range\nFROM demo.metrics\nWHERE $__timeFilter(ts) AND host IN ($host)\nGROUP BY host, region\nORDER BY host",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "DuckDB types as Grafana shows them",
+      "description": "Nested values arrive as JSON text; a NULL stays empty.",
+      "type": "table",
+      "datasource": {
+        "type": "gizmodata-hardcharger-datasource",
+        "uid": "hardcharger-dev"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gizmodata-hardcharger-datasource",
+            "uid": "hardcharger-dev"
+          },
+          "rawSql": "SELECT 42::BIGINT AS bigint, 3.14::DECIMAL(9,2) AS decimal, DATE '2026-11-13' AS date,\n       INTERVAL '1 day 2 hours' AS \"interval\", [1, 2, 3] AS list,\n       {'city': 'Chicago', 'zip': 60601} AS struct, MAP {'k': 1} AS map,\n       uuid() AS uuid, NULL::INTEGER AS null_integer",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {}
+    }
+  ]
+}

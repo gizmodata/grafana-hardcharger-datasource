@@ -1,14 +1,18 @@
+# The development stack's data source: the Hardcharger server of docker-compose.yaml.
 apiVersion: 1
 
 datasources:
-  - name: 'hardcharger'
-    type: 'gizmodata-hardcharger-datasource'
+  - name: Hardcharger
+    uid: hardcharger-dev
+    type: gizmodata-hardcharger-datasource
     access: proxy
-    isDefault: false
-    orgId: 1
-    version: 1
+    isDefault: true
     editable: true
     jsonData:
-      path: '/resources'
+      host: hardcharger
+      port: 31337
+      # The development server runs without TLS. Leave useTLS out (or true) for a real server.
+      useTLS: false
+      username: grafana
     secureJsonData:
-      apiKey: 'api-key'
+      password: hardcharger-dev-password

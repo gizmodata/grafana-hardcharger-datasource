@@ -5,24 +5,59 @@
   "id": "gizmodata-hardcharger-datasource",
   "metrics": true,
   "backend": true,
-  "executable": "gpx_hardcharger",
+  "executable": "gpx_hardcharger_datasource",
   "info": {
-    "description": "",
+    "description": "Query Hardcharger, GizmoData's DuckDB 2.0 server, with SQL over the Chargewire protocol",
     "author": {
-      "name": "Gizmodata"
+      "name": "GizmoData",
+      "url": "https://gizmodata.com"
     },
-    "keywords": ["datasource"],
+    "keywords": [
+      "hardcharger",
+      "gizmodata",
+      "chargewire",
+      "duckdb",
+      "sql",
+      "arrow",
+      "adbc",
+      "datasource"
+    ],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"
     },
-    "links": [],
+    "links": [
+      {
+        "name": "Documentation",
+        "url": "https://github.com/gizmodata/grafana-hardcharger-datasource#readme"
+      },
+      {
+        "name": "Source",
+        "url": "https://github.com/gizmodata/grafana-hardcharger-datasource"
+      },
+      {
+        "name": "Report an issue",
+        "url": "https://github.com/gizmodata/grafana-hardcharger-datasource/issues"
+      },
+      {
+        "name": "License",
+        "url": "https://github.com/gizmodata/grafana-hardcharger-datasource/blob/main/LICENSE"
+      },
+      {
+        "name": "Hardcharger",
+        "url": "https://gizmodata.com/hardcharger"
+      }
+    ],
     "screenshots": [],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
   "dependencies": {
-    "grafanaDependency": ">=13.2.0",
+    "grafanaDependency": ">=13.3.0",
     "plugins": []
-  }
+  },
+  "alerting": true,
+  "annotations": true,
+  "logs": false,
+  "category": "sql"
 }

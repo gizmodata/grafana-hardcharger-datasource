@@ -1,45 +1,62 @@
-import React, { ChangeEvent } from 'react';
-import { InlineField, Input, Stack } from '@grafana/ui';
-import { QueryEditorProps } from '@grafana/data';
-import { DataSource } from '../datasource';
-import { MyDataSourceOptions, MyQuery } from '../types';
+import React from 'react';
 
-type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
+import { QueryEditorProps } from '@grafana/data';
+import { InlineField, RadioButtonGroup, Stack, TextLink } from '@grafana/ui';
+
+import { DataSource } from '../datasource';
+import { DEFAULT_QUERY, HardchargerOptions, HardchargerQuery, QueryFormat } from '../types';
+import { SqlEditor } from './SqlEditor';
+
+type Props = QueryEditorProps<DataSource, HardchargerQuery, HardchargerOptions>;
+
+const formats: Array<{ label: string; value: QueryFormat; description: string }> = [
+  { label: 'Table', value: 'table', description: 'The rows as they are' },
+  {
+    label: 'Time series',
+    value: 'time_series',
+    description: 'A time column, number columns, and text columns that name the series',
+  },
+];
 
 export function QueryEditor({ query, onChange, onRunQuery }: Props) {
-  const onQueryTextChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange({ ...query, queryText: event.target.value });
-  };
-
-  const onConstantChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange({ ...query, constant: parseFloat(event.target.value) });
-    // executes the query
-    onRunQuery();
-  };
-
-  const { queryText, constant } = query;
+  const format: QueryFormat = query.format ?? 'table';
+  const rawSql = query.rawSql ?? DEFAULT_QUERY.rawSql ?? '';
 
   return (
-    <Stack gap={0}>
-      <InlineField label="Constant">
-        <Input
-          id="query-editor-constant"
-          onChange={onConstantChange}
-          value={constant}
-          width={8}
-          type="number"
-          step="0.1"
-        />
-      </InlineField>
-      <InlineField label="Query Text" labelWidth={16} tooltip="Not used yet">
-        <Input
-          id="query-editor-query-text"
-          onChange={onQueryTextChange}
-          value={queryText || ''}
-          required
-          placeholder="Enter a query"
-        />
-      </InlineField>
+    <Stack direction="column" gap={1}>
+      {/* The query is saved when the editor is left, not on every keystroke: Grafana runs an
+          annotation query on each change, and half-typed SQL is not worth a round trip. */}
+      <SqlEditor
+        value={rawSql}
+        onCommit={(sql) => {
+          onChange({ ...query, rawSql: sql, format });
+          onRunQuery();
+        }}
+      />
+      <Stack direction="row" gap={2} alignItems="center" wrap="wrap">
+        <InlineField
+          label="Format"
+          labelWidth={12}
+          tooltip="Table shows the rows as they are. Time series needs a time column and at least one number column; text columns become the series' labels."
+        >
+          <RadioButtonGroup
+            options={formats}
+            value={format}
+            onChange={(value) => {
+              onChange({ ...query, rawSql, format: value });
+              onRunQuery();
+            }}
+          />
+        </InlineField>
+        <span>
+          Runs when the editor loses focus, and on Ctrl/Cmd+S. Macros: <code>$__timeFilter(column)</code>,{' '}
+          <code>$__timeGroup(column, $__interval)</code>,{' '}
+          <TextLink href="https://github.com/gizmodata/grafana-hardcharger-datasource#macros" external inline>
+            all macros
+          </TextLink>
+          .
+        </span>
+      </Stack>
     </Stack>
   );
 }

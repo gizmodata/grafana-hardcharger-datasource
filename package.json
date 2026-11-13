@@ -1,19 +1,21 @@
 {
-  "name": "hardcharger",
+  "name": "gizmodata-hardcharger-datasource",
   "version": "1.0.0",
   "scripts": {
     "build": "webpack -c ./.config/webpack/webpack.config.ts --env production",
     "dev": "webpack -w -c ./.config/webpack/webpack.config.ts --env development",
     "test": "jest --watch --onlyChanged",
-    "test:ci": "jest --passWithNoTests --maxWorkers 4",
+    "test:ci": "jest --maxWorkers 4",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --cache .",
     "lint:fix": "npm run lint -- --fix && prettier --write --list-different .",
     "e2e": "playwright test",
     "server": "docker compose up --build",
-    "sign": "sign-plugin"
+    "sign": "sign-plugin",
+    "build:backend": "go run github.com/magefile/mage -v buildAll",
+    "test:backend": "go test ./pkg/..."
   },
-  "author": "Gizmodata",
+  "author": "GizmoData",
   "license": "Apache-2.0",
   "devDependencies": {
     "@grafana/eslint-config": "^10.0.0",
@@ -65,17 +67,24 @@
     "webpack-virtual-modules": "^0.6.2"
   },
   "engines": {
-    "node": ">=24.5"
+    "node": ">=26"
   },
   "dependencies": {
     "@emotion/css": "11.10.6",
-    "@grafana/data": "13.2.4",
-    "@grafana/i18n": "13.2.4",
-    "@grafana/runtime": "13.2.4",
-    "@grafana/ui": "13.2.4",
-    "@grafana/schema": "13.2.4",
+    "@grafana/data": "13.3.1",
+    "@grafana/i18n": "13.3.1",
+    "@grafana/runtime": "13.3.1",
+    "@grafana/ui": "13.3.1",
+    "@grafana/schema": "13.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
-  "packageManager": "npm@11.20.0"
+  "packageManager": "npm@11.20.0",
+  "description": "Hardcharger data source plugin for Grafana",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gizmodata/grafana-hardcharger-datasource.git"
+  },
+  "homepage": "https://github.com/gizmodata/grafana-hardcharger-datasource",
+  "private": true
 }

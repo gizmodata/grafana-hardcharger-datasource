@@ -1,5 +1,33 @@
+# The development stack: a Hardcharger server with sample data, and Grafana with this plugin
+# (from ./dist), a provisioned data source and a sample dashboard.
+#
+#   npm run build && npm run build:backend && docker compose up --build
+#   open http://localhost:3000
+#
+# GRAFANA_PORT and HARDCHARGER_PORT move the published ports; GRAFANA_VERSION and GRAFANA_IMAGE
+# choose the Grafana image; HARDCHARGER_VERSION the server's.
 services:
+  hardcharger:
+    image: ghcr.io/gizmodata/hardcharger:${HARDCHARGER_VERSION:-2.12.0}
+    environment:
+      HARDCHARGER_ADMIN_USERNAME: grafana
+      # A development password, in this file on purpose. Never reuse it.
+      HARDCHARGER_ADMIN_PASSWORD: hardcharger-dev-password
+      HARDCHARGER_DATABASE: ':memory:'
+      HARDCHARGER_INIT_SQL_COMMANDS_FILE: /dev-stack/init.sql
+    volumes:
+      - ./dev/hardcharger:/dev-stack:ro
+    ports:
+      - '127.0.0.1:${HARDCHARGER_PORT:-31337}:31337'
+
   grafana:
     extends:
       file: .config/docker-compose-base.yaml
       service: grafana
+    build:
+      args:
+        grafana_version: ${GRAFANA_VERSION:-13.3.1}
+    ports: !override
+      - '127.0.0.1:${GRAFANA_PORT:-3000}:3000/tcp'
+    depends_on:
+      - hardcharger
