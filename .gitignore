@@ -64,3 +64,8 @@ ci/
 
 # Release notes written by the release workflow
 release_notes.md
+
+# Database files a local server or test run may leave behind
+*.db
+*.duckdb
+*.wal

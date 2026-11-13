@@ -177,6 +177,9 @@ func startServer(ca *testCA, extraArgs ...string) (*testServer, error) {
 	}
 	defer func() { _ = logFile.Close() }()
 	server.cmd = exec.Command(binary, args...)
+	// Whatever the server writes next to its (in-memory) database, such as the instrumentation
+	// tables' file, lands in the tests' temporary directory.
+	server.cmd.Dir = serverDir
 	server.cmd.Env = append(os.Environ(), "HARDCHARGER_ADMIN_USERNAME="+testUsername, "HARDCHARGER_ADMIN_PASSWORD="+server.Password)
 	server.cmd.Stdout, server.cmd.Stderr = logFile, logFile
 	// The server stops when this pipe closes, so it never outlives the tests.
