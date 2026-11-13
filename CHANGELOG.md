@@ -13,7 +13,7 @@ GizmoData's DuckDB 2.0 server, over the Chargewire protocol.
 
 ### Added
 
-- **Backend** in Go on the Hardcharger ADBC driver (`hardcharger-adbc/go/v2` 2.5.0), for dashboards,
+- **Backend** in Go on the Hardcharger ADBC driver (`hardcharger-adbc/go/v2` 2.5.1), for dashboards,
   Explore, alert rules, annotations and query variables.
 - **Connection**: host and port or a `hardcharger://` URI; TLS on by default, with a CA certificate,
   a server name override and a client certificate (mutual TLS); sign-in with a username and

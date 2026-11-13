@@ -8,10 +8,17 @@ name: Release
 # with the plugins:write scope). Without it the release is the same zip, unsigned: Grafana then
 # loads it only when allow_loading_unsigned_plugins names the plugin.
 
+# Run by hand (Actions > Release > Run workflow) it is a dry run on that branch: the same CI, then
+# the plugin built for every platform, signed when the token is set, packaged and validated with
+# the action the release step itself runs (package-plugin), and the zip kept as a workflow
+# artifact. No tag is needed and no GitHub Release is made. Do that once before the first tag and
+# after changing this file: this repository is a Go module, so a pushed tag must not be moved.
+
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -54,7 +61,12 @@ jobs:
         name: The tag, package.json, plugin.json and CHANGELOG.md agree; the tag is on main
         run: |
           set -euo pipefail
-          version=$(scripts/check-version.sh "$GITHUB_REF_NAME")
+          tag="$GITHUB_REF_NAME"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            # A dry run has no tag: check the files against the version they declare.
+            tag="v$(node -p 'require("./package.json").version')"
+          fi
+          version=$(scripts/check-version.sh "$tag")
           git fetch --quiet origin main
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
             echo "::error::tag $GITHUB_REF_NAME is on a commit that is not on main"
@@ -72,6 +84,7 @@ jobs:
       # is not empty, packages the zip and its SHA-1, runs Grafana's plugin validator, attests the
       # zip's provenance and creates a draft GitHub Release with both files attached.
       - id: build
+        if: github.event_name == 'push'
         uses: grafana/plugin-actions/build-plugin@build-plugin/v1.2.0
         with:
           policy_token: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN }}
@@ -79,7 +92,28 @@ jobs:
           node-version: '26'
           attestation: true
 
+      # The dry run: what build-plugin does before it creates the release (it calls this same
+      # action at this same ref): build, test, sign when the token is set, package, validate.
+      - id: package
+        if: github.event_name == 'workflow_dispatch'
+        uses: grafana/plugin-actions/package-plugin@main
+        with:
+          policy_token: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN }}
+          go-version: '1.27'
+          node-version: '26'
+      - name: "Dry run: keep the packaged plugin"
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: plugin-dry-run
+          path: |
+            ${{ steps.package.outputs.archive }}
+            ${{ steps.package.outputs.archive-sha1sum }}
+          if-no-files-found: error
+          retention-days: 7
+
       - name: The release has the zip and its checksum, for this version
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -95,6 +129,7 @@ jobs:
           done
 
       - name: Publish the release with the CHANGELOG section as its notes
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}

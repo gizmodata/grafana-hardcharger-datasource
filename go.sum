@@ -54,10 +54,10 @@ github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/getkin/kin-openapi v0.153.0 h1:Qo4qWW+Pj8o90LUTE6MDyG5TJAtWnfvrcWOBcWg7eBw=
 github.com/getkin/kin-openapi v0.153.0/go.mod h1:mEZ6Ip3gyqPDokUsJsttZhv3r46/NeH3tGwrFUMcoSE=
-github.com/gizmodata/chargewire-adbc/go/v2 v2.3.0 h1:58g3sDRy8U0ntbXwT3F+4hAs89a8h7tZ7knTt/bltFU=
-github.com/gizmodata/chargewire-adbc/go/v2 v2.3.0/go.mod h1:mt97Q8CnORrf5GiL+HOqYox3N9bSbutJU2hHgv3kznk=
-github.com/gizmodata/hardcharger-adbc/go/v2 v2.5.0 h1:IVnXBSF6KEjXROkA8He0qIOFzfIWhcNdrmRLtbaLmdI=
-github.com/gizmodata/hardcharger-adbc/go/v2 v2.5.0/go.mod h1:KqpfnFgrpvIaYXCEGzQJovI9p765oK0UktG/VU2z+3Y=
+github.com/gizmodata/chargewire-adbc/go/v2 v2.3.1 h1:7pn6edF4iPYwUg1j+JIm9PdnL4YevK+eXBBi1zHCVl8=
+github.com/gizmodata/chargewire-adbc/go/v2 v2.3.1/go.mod h1:mt97Q8CnORrf5GiL+HOqYox3N9bSbutJU2hHgv3kznk=
+github.com/gizmodata/hardcharger-adbc/go/v2 v2.5.1 h1:DBcFNeL9b31lxu7c8e3n8H/C8+Q3cqP7RwOm98wIBQE=
+github.com/gizmodata/hardcharger-adbc/go/v2 v2.5.1/go.mod h1:PAj4AVckuy/s5I8iDlFmGJI/GiVp68slFHtKDHCVMMY=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/logr v1.4.4 h1:tG4xh9yMsRCAiodLVTxyrkzSZ9+o0L1Kg/+cPVcbP/8=
 github.com/go-logr/logr v1.4.4/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=

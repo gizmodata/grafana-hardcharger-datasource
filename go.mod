@@ -5,7 +5,7 @@ go 1.27.2
 require (
 	github.com/apache/arrow-adbc/go/adbc v1.13.0
 	github.com/apache/arrow-go/v18 v18.8.0
-	github.com/gizmodata/hardcharger-adbc/go/v2 v2.5.0
+	github.com/gizmodata/hardcharger-adbc/go/v2 v2.5.1
 	github.com/grafana/grafana-plugin-sdk-go v0.299.0
 )
 
@@ -22,7 +22,7 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/fatih/color v1.19.0 // indirect
-	github.com/gizmodata/chargewire-adbc/go/v2 v2.3.0 // indirect
+	github.com/gizmodata/chargewire-adbc/go/v2 v2.3.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/goccy/go-json v0.12.0 // indirect
