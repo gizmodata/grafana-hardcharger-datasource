@@ -1,217 +1,266 @@
 name: CI
 
+# Every check, on every push to main and every pull request, and the release gate: release.yml calls
+# this workflow on the tagged commit and packages nothing unless every job passed.
+#
+#   - frontend: type check, lint, formatting, unit tests (jest), production build;
+#   - backend: gofmt, go vet, golangci-lint, the unit tests and the live tests against a real
+#     hardcharger-server (the `hardcharger` Python package downloads the released binary), then the
+#     backend for every platform with CGO_ENABLED=0;
+#   - e2e: Playwright against a real Grafana and a real Hardcharger server (docker compose);
+#   - package: the plugin zip, the version check and Grafana's plugin validator.
+#
+# The live and end-to-end tests need a server: they FAIL when it can't start. Nothing skips.
+
 on:
   push:
-    branches:
-      - master
-      - main
+    branches: [main]
+    # Files that nothing builds, tests or packages. README.md and CHANGELOG.md are NOT here: both go
+    # into the plugin zip, which the validator checks.
+    paths-ignore:
+      - 'docs/**'
+      - 'NOTICE'
+      - 'CLAUDE.md'
+      - '.gitattributes'
+      - '.github/dependabot.yml'
+  # Every pull request runs, documentation-only ones too: "CI result" is the check to require in
+  # branch protection, and a required check that never reports would block the merge.
   pull_request:
-    branches:
-      - master
-      - main
+  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  # The Hardcharger server the live tests run (scripts/hardcharger-server.sh) and the e2e stack's.
+  HARDCHARGER_VERSION: '2.12.0'
+  # The released server binary is downloaded from GitHub: authenticate so the download isn't rate
+  # limited.
+  HARDCHARGER_INSTALL_TOKEN: ${{ github.token }}
+  PLUGIN_VALIDATOR_VERSION: '0.53.6'
+  GOLANGCI_LINT_VERSION: 'v2.15.0'
+
 jobs:
-  build:
-    name: Build, lint and unit tests
-    runs-on: ubuntu-latest
+  # A push to main of a commit this workflow already passed on (a fast-forward merge of a tested
+  # branch) doesn't test it again. Tags, pull requests and manual runs always test.
+  gate:
+    name: Already tested?
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      actions: read
+      contents: read
     outputs:
-      plugin-id: ${{ steps.metadata.outputs.plugin-id }}
-      plugin-version: ${{ steps.metadata.outputs.plugin-version }}
-      has-e2e: ${{ steps.check-for-e2e.outputs.has-e2e }}
-      has-backend: ${{ steps.check-for-backend.outputs.has-backend }}
-    env:
-      GRAFANA_ACCESS_POLICY_TOKEN: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN }}
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          run=true
+          reason="a $EVENT run on $REF"
+          if [ "$EVENT" = push ] && [ "$REF" = refs/heads/main ]; then
+            passed=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$SHA&status=success" --jq '.total_count')
+            if [ "$passed" -gt 0 ]; then
+              run=false
+              reason="commit $SHA already passed this workflow $passed time(s)"
+            fi
+          fi
+          echo "run=$run ($reason)"
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "**Tests:** run=\`$run\` ($reason)" >> "$GITHUB_STEP_SUMMARY"
+
+  frontend:
+    name: Frontend
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check types
-        run: npm run typecheck
-      - name: Lint
-        run: npm run lint
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
       - name: Unit tests
         run: npm run test:ci
-      - name: Build frontend
-        run: npm run build
-
-      - name: Check for backend
-        id: check-for-backend
-        run: |
-          if [ -f "Magefile.go" ]
-          then
-            echo "has-backend=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Setup Go environment
-        if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: actions/setup-go@v7
+      - run: npm run build
+      - uses: actions/upload-artifact@v7
         with:
-          go-version-file: go.mod
-
-      - name: Lint backend
-        if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-        with:
-          version: latest
-          args: ./...
-
-      - name: Build backend
-        if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@a662bd8c29d8106879588cfff83b2faf6e6f59db # v4.0.0
-        with:
-          version: latest
-          args: buildAll
-
-      - name: Test backend
-        if: steps.check-for-backend.outputs.has-backend == 'true'
-        uses: magefile/mage-action@a662bd8c29d8106879588cfff83b2faf6e6f59db # v4.0.0
-        with:
-          version: latest
-          args: test
-
-      - name: Check for E2E
-        id: check-for-e2e
-        run: |
-          if [ -f "playwright.config.ts" ]
-          then
-            echo "has-e2e=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Sign plugin
-        run: npm run sign
-        if: ${{ env.GRAFANA_ACCESS_POLICY_TOKEN != '' }}
-
-      - name: Get plugin metadata
-        id: metadata
-        run: |
-          sudo apt-get install jq
-
-          export GRAFANA_PLUGIN_ID=$(cat dist/plugin.json | jq -r .id)
-          export GRAFANA_PLUGIN_VERSION=$(cat dist/plugin.json | jq -r .info.version)
-          export GRAFANA_PLUGIN_ARTIFACT=${GRAFANA_PLUGIN_ID}-${GRAFANA_PLUGIN_VERSION}.zip
-
-          echo "plugin-id=${GRAFANA_PLUGIN_ID}" >> $GITHUB_OUTPUT
-          echo "plugin-version=${GRAFANA_PLUGIN_VERSION}" >> $GITHUB_OUTPUT
-          echo "archive=${GRAFANA_PLUGIN_ARTIFACT}" >> $GITHUB_OUTPUT
-
-      - name: Package plugin
-        id: package-plugin
-        run: |
-          mv dist ${PLUGIN_ID}
-          zip ${ARCHIVE} ${PLUGIN_ID} -r
-        env:
-          ARCHIVE: ${{ steps.metadata.outputs.archive }}
-          PLUGIN_ID: ${{ steps.metadata.outputs.plugin-id }}
-
-      - name: Check plugin.json
-        run: |
-          docker run --pull=always \
-            -v $PWD/${ARCHIVE}:/archive.zip \
-            grafana/plugin-validator-cli -analyzer=metadatavalid /archive.zip
-        env:
-          ARCHIVE: ${{ steps.metadata.outputs.archive }}
-
-      - name: Archive Build
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.metadata.outputs.plugin-id }}-${{ steps.metadata.outputs.plugin-version }}
-          path: ${{ steps.metadata.outputs.plugin-id }}
+          name: dist-frontend
+          path: dist/
           retention-days: 5
+          if-no-files-found: error
 
-  resolve-versions:
-    name: Resolve e2e images
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    needs: build
-    if: ${{ needs.build.outputs.has-e2e == 'true' }}
-    outputs:
-      matrix: ${{ steps.resolve-versions.outputs.matrix }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - name: Resolve Grafana E2E versions
-        id: resolve-versions
-        uses: grafana/plugin-actions/e2e-version@e2e-version/v3.0.1
-
-  playwright-tests:
-    needs: [resolve-versions, build]
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        GRAFANA_IMAGE: ${{fromJson(needs.resolve-versions.outputs.matrix)}}
-    name: e2e test ${{ matrix.GRAFANA_IMAGE.name }}@${{ matrix.GRAFANA_IMAGE.VERSION }}
-    runs-on: ubuntu-latest
+  backend:
+    name: Backend
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-
-      - name: Download plugin
-        uses: actions/download-artifact@v8
+      - uses: actions/setup-go@v7
         with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l pkg Magefile.go)
+          if [ -n "$unformatted" ]; then
+            echo "::error::not gofmt-formatted: $unformatted"
+            exit 1
+          fi
+      - run: go vet ./pkg/...
+      - name: golangci-lint
+        run: go run "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$GOLANGCI_LINT_VERSION" run ./pkg/...
+      # The server binary comes from GitHub's release downloads, which answer 5xx now and then: the
+      # script fetches it once, with retries, and the tests still fail if no server can be had.
+      - name: Download the Hardcharger server
+        run: echo "HARDCHARGER_SERVER_BINARY=$(scripts/hardcharger-server.sh)" >> "$GITHUB_ENV"
+      - name: Unit and live tests (a real Hardcharger server), with the race detector
+        run: scripts/go-test.sh -race
+      - name: The backend for every platform, without cgo
+        run: |
+          go run github.com/magefile/mage -v buildAll
+          ls -l dist
+          for platform in linux_amd64 linux_arm64 darwin_amd64 darwin_arm64 windows_amd64.exe; do
+            if ! [ -s "dist/gpx_hardcharger_datasource_$platform" ]; then
+              echo "::error::no backend binary for $platform"
+              exit 1
+            fi
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-backend
+          path: dist/
+          retention-days: 5
+          if-no-files-found: error
+
+  e2e:
+    name: End to end (Grafana and Hardcharger)
+    needs: [frontend, backend]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
           path: dist
-          name: ${{ needs.build.outputs.plugin-id }}-${{ needs.build.outputs.plugin-version }}
-
-      - name: Execute permissions on binary
-        if: needs.build.outputs.has-backend == 'true'
-        run: |
-          chmod +x ./dist/gpx_*
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v7
+          merge-multiple: true
+      - name: The backend binaries are executable again
+        run: chmod +x dist/gpx_*
+      - uses: actions/setup-node@v7
         with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Install dev dependencies
-        run: npm ci
-
-      - name: Start Grafana
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Start Grafana and Hardcharger
+        env:
+          ANONYMOUS_AUTH_ENABLED: 'false'
+          DEVELOPMENT: 'false'
         run: |
-          docker compose pull
-          ANONYMOUS_AUTH_ENABLED=false DEVELOPMENT=false GRAFANA_VERSION=${{ matrix.GRAFANA_IMAGE.VERSION }} GRAFANA_IMAGE=${{ matrix.GRAFANA_IMAGE.NAME }} docker compose up -d
-
-      - name: Wait for grafana server
-        uses: grafana/plugin-actions/wait-for-grafana@wait-for-grafana/v1.0.4
-        with:
-          url: http://localhost:3000/login
-
-      - name: Install Playwright Browsers
-        run: npm exec playwright install chromium --with-deps
-
-      - name: Run Playwright tests
-        id: run-tests
+          docker compose up -d --build
+          for attempt in $(seq 1 90); do
+            if curl -sf http://127.0.0.1:3000/api/health >/dev/null; then
+              echo "Grafana answers after $attempt attempt(s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Grafana did not start"
+          docker compose logs
+          exit 1
+      - name: Install the test browser
+        run: npx playwright install chromium --with-deps
+      - name: End-to-end tests
+        env:
+          GRAFANA_URL: http://127.0.0.1:3000
         run: npm run e2e
+      - name: Logs of the stack
+        if: failure()
+        run: docker compose logs --no-color > stack.log 2>&1
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e-failure
+          path: |
+            playwright-report/
+            test-results/
+            stack.log
+          retention-days: 5
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes
 
-      - name: Docker logs
-        if: ${{ always() && steps.run-tests.outcome == 'failure' }}
+  package:
+    name: Package and validate
+    needs: [frontend, backend]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: package.json, plugin.json and CHANGELOG.md agree on the version
+        run: scripts/check-version.sh
+      - name: Package
+        id: package
+        run: echo "archive=$(scripts/package.sh)" >> "$GITHUB_OUTPUT"
+      - name: Grafana's plugin validator
+        env:
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+        run: npx -y "@grafana/plugin-validator@$PLUGIN_VALIDATOR_VERSION" -sourceCodeUri file://./ "$ARCHIVE"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: plugin-zip
+          path: |
+            gizmodata-hardcharger-datasource-*.zip
+            gizmodata-hardcharger-datasource-*.zip.sha1
+          retention-days: 7
+          if-no-files-found: error
+
+  # The one check to require in branch protection: red if any job failed or was cancelled.
+  result:
+    name: CI result
+    if: always()
+    needs: [gate, frontend, backend, e2e, package]
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          docker logs gizmodata-hardcharger-datasource >& grafana-server.log
-
-      - name: Stop grafana docker
-        run: docker compose down
-
-      # Uncomment this step to upload the server log to Github artifacts. Remember Github artifacts are public on the Internet if the repository is public.
-      # - name: Upload server log
-      #   uses: actions/upload-artifact@v4
-      #   if: ${{ always() && steps.run-tests.outcome == 'failure' }}
-      #   with:
-      #     name: ${{ matrix.GRAFANA_IMAGE.NAME }}-v${{ matrix.GRAFANA_IMAGE.VERSION }}-${{github.run_id}}-server-log
-      #     path: grafana-server.log
-      #     retention-days: 5
+          echo "results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "* | *" cancelled "*) exit 1 ;;
+          esac

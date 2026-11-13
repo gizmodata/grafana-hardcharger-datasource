@@ -2,7 +2,7 @@ import { expect, test } from './fixtures';
 
 const PANELS = [
   'CPU by host',
-  'Requests in range',
+  'Requests',
   'Average CPU',
   'Requests by region',
   'Latest reading per host',

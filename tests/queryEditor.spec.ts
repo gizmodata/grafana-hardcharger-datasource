@@ -18,7 +18,7 @@ test.describe('the query editor in a panel', () => {
       row,
       "SELECT 42 AS answer, 'héllo' AS greeting, NULL::INTEGER AS nothing, [1, 2, 3] AS list, 12.5::DECIMAL(9,2) AS price"
     );
-    await expect(await response).toBeOK();
+    await expect(response).toBeOK();
     await expect(panelEditPage.panel.fieldNames).toHaveText(['answer', 'greeting', 'nothing', 'list', 'price']);
     await expect(panelEditPage.panel.data).toContainText(['42', 'héllo', '[1,2,3]', '12.5']);
     await expect(panelEditPage.panel.getErrorIcon()).toHaveCount(0);
@@ -45,7 +45,7 @@ test.describe('the query editor in a panel', () => {
     const response = panelEditPage.waitForQueryDataResponse();
     await row.getByLabel('Time series').check({ force: true });
     const answered = await response;
-    await expect(answered).toBeOK();
+    expect(answered.ok()).toBe(true);
     // As time series: a wide frame, one cpu field per host, labelled with it.
     const frame = (await answered.json()).results.A.frames[0];
     expect(frame.schema.meta.type).toBe('timeseries-wide');
@@ -88,7 +88,7 @@ test('Explore runs a query', async ({ explorePage, readProvisionedDataSource, pa
   await explorePage.datasource.set(ds.name);
   const response = explorePage.waitForQueryDataResponse();
   await setSql(page, explorePage.getQueryEditorRow('A'), "SELECT 'from explore' AS source, 7 * 6 AS answer");
-  await expect(await response).toBeOK();
+  await expect(response).toBeOK();
   await expect(explorePage.tablePanel.fieldNames).toContainText(['source', 'answer']);
   await expect(explorePage.tablePanel.data).toContainText(['from explore', '42']);
 });

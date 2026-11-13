@@ -75,7 +75,7 @@ describe('interpolateVariable', () => {
     expect(interpolateVariable("o'neil", { name: '__user' })).toBe("'o''neil'");
   });
 
-  it("quotes a dashboard variable even when it holds an interval or has no description", () => {
+  it('quotes a dashboard variable even when it holds an interval or has no description', () => {
     expect(interpolateVariable('5m', { name: 'bucket' })).toBe("'5m'");
     expect(interpolateVariable('5m', undefined)).toBe("'5m'");
     expect(interpolateVariable("x' OR '1'='1", undefined)).toBe("'x'' OR ''1''=''1'");

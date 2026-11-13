@@ -1,0 +1,11 @@
+Hardcharger data source for Grafana
+Copyright 2026 GizmoData LLC
+
+This product includes software developed at GizmoData LLC (https://gizmodata.com).
+
+It was started from Grafana's plugin scaffold (@grafana/create-plugin, https://github.com/grafana/plugin-tools),
+Copyright Grafana Labs, licensed under the Apache License, Version 2.0: the files under .config/ are the
+scaffold's.
+
+Hardcharger and GizmoData are trademarks of GizmoData LLC. Grafana is a trademark of Raintank, Inc. dba
+Grafana Labs.

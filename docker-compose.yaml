@@ -15,6 +15,8 @@ services:
       HARDCHARGER_ADMIN_PASSWORD: hardcharger-dev-password
       HARDCHARGER_DATABASE: ':memory:'
       HARDCHARGER_INIT_SQL_COMMANDS_FILE: /dev-stack/init.sql
+      # Record statements, so hardcharger_live_queries() shows the query tags Grafana sends.
+      HARDCHARGER_ENABLE_INSTRUMENTATION: 'true'
     volumes:
       - ./dev/hardcharger:/dev-stack:ro
     ports:

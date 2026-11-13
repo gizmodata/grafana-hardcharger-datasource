@@ -24,11 +24,12 @@ const variables: Record<string, unknown> = {
   __interval: '30s',
   __interval_ms: '30000',
 };
-const replace = jest.fn((text: string, _scoped: unknown, format: (value: unknown, variable: { name: string }) => string) =>
-  text.replace(/\$\{(\w+)\}|\$(\w+)/g, (match, braced, bare) => {
-    const name = braced ?? bare;
-    return name in variables ? format(variables[name], { name }) : match;
-  })
+const replace = jest.fn(
+  (text: string, _scoped: unknown, format: (value: unknown, variable: { name: string }) => string) =>
+    text.replace(/\$\{(\w+)\}|\$(\w+)/g, (match, braced, bare) => {
+      const name = braced ?? bare;
+      return name in variables ? format(variables[name], { name }) : match;
+    })
 );
 
 jest.mock('@grafana/runtime', () => ({
@@ -159,7 +160,9 @@ describe('HardchargerVariableSupport', () => {
   it('runs a variable saved as plain SQL text', async () => {
     const { query } = run({ data: [] }, 'SELECT DISTINCT host FROM t');
     expect(query).toHaveBeenCalledWith(
-      expect.objectContaining({ targets: [{ refId: 'variable', rawSql: 'SELECT DISTINCT host FROM t', format: 'table' }] })
+      expect.objectContaining({
+        targets: [{ refId: 'variable', rawSql: 'SELECT DISTINCT host FROM t', format: 'table' }],
+      })
     );
   });
 

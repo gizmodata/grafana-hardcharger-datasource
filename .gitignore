@@ -58,3 +58,9 @@ ci/
 .env
 .env.*
 .venv/
+
+# The Hardcharger server for the live tests (scripts/hardcharger-server.sh)
+.venv-hardcharger/
+
+# Release notes written by the release workflow
+release_notes.md

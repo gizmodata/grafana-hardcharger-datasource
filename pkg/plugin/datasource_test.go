@@ -108,7 +108,7 @@ func TestUnreachableServer(t *testing.T) {
 func TestQueryTag(t *testing.T) {
 	ds := offlineDatasource(t, nil, nil)
 	request := &backend.QueryDataRequest{
-		PluginContext: backend.PluginContext{OrgID: 3, User: &backend.User{Login: "alice"}},
+		PluginContext: backend.PluginContext{Namespace: "org-3", User: &backend.User{Login: "alice"}},
 		Headers: map[string]string{"http_X-Dashboard-Uid": "dash-1", "http_X-Panel-Id": "12", "http_X-Rule-Uid": "rule-9",
 			"FromAlert": "true"},
 	}
@@ -116,7 +116,7 @@ func TestQueryTag(t *testing.T) {
 	if err := json.Unmarshal([]byte(ds.queryTag(request, backend.DataQuery{RefID: "B"})), &tag); err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]any{"app": "grafana", "plugin": PluginID, "datasource_uid": "offline", "ref_id": "B", "org_id": 3.0,
+	want := map[string]any{"app": "grafana", "plugin": PluginID, "datasource_uid": "offline", "ref_id": "B", "namespace": "org-3",
 		"user": "alice", "dashboard_uid": "dash-1", "panel_id": "12", "rule_uid": "rule-9", "from_alert": true}
 	if len(tag) != len(want) {
 		t.Errorf("tag %v", tag)
@@ -173,7 +173,7 @@ func TestNewSettingsGetANewInstance(t *testing.T) {
 	settings := offlineSettings(t, nil, nil)
 	pluginContext := func() backend.PluginContext {
 		copied := settings
-		return backend.PluginContext{OrgID: 1, PluginID: PluginID, DataSourceInstanceSettings: &copied}
+		return backend.PluginContext{PluginID: PluginID, DataSourceInstanceSettings: &copied}
 	}
 	first, err := manager.Get(context.Background(), pluginContext())
 	if err != nil {

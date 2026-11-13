@@ -1,29 +1,104 @@
-# This GitHub Action automates the process of building Grafana plugins.
-# (For more information, see https://github.com/grafana/plugin-actions/blob/main/build-plugin/README.md)
 name: Release
+
+# A vX.Y.Z tag releases the plugin: the whole CI runs on the tagged commit first, and only then is
+# the plugin built for every platform, signed (when the repository has the signing token), packaged
+# and attached to a GitHub Release whose notes are the tag's CHANGELOG.md section.
+#
+# Signing needs the repository secret GRAFANA_ACCESS_POLICY_TOKEN (a grafana.com access policy token
+# with the plugins:write scope). Without it the release is the same zip, unsigned: Grafana then
+# loads it only when allow_loading_unsigned_plugins names the plugin.
 
 on:
   push:
     tags:
-      - 'v*' # Run workflow on version tags, e.g. v1.0.0.
+      - 'v*'
 
-permissions: read-all
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  # The release gate: every CI job, on the tagged commit itself. CI uses no secrets, so none are
+  # passed on.
+  tests:
+    name: CI on the tagged commit
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      actions: read
+      contents: read
+
   release:
+    name: Build, sign, package and release
+    needs: tests
+    # x64, not Arm: this job runs Grafana's build-plugin action (its packaging, signing and validator
+    # steps), which Grafana runs and tests on ubuntu-latest only, and it runs once per release.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+      id-token: write
+      attestations: write
+    env:
+      HARDCHARGER_VERSION: '2.12.0'
+      HARDCHARGER_INSTALL_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
         with:
+          fetch-depth: 0 # the whole history: a release tag must be on main
           persist-credentials: false
 
-      - uses: grafana/plugin-actions/build-plugin@build-plugin/v1.2.0
-        # Uncomment to enable plugin signing
-        # (For more info on how to generate the access policy token see https://grafana.com/developers/plugin-tools/publish-a-plugin/sign-a-plugin#generate-an-access-policy-token)
-        #with:
-        # Make sure to save the token in your repository secrets
-        #policy_token: $
-        # Usage of GRAFANA_API_KEY is deprecated, prefer `policy_token` option above
-        #grafana_token: $
+      - id: version
+        name: The tag, package.json, plugin.json and CHANGELOG.md agree; the tag is on main
+        run: |
+          set -euo pipefail
+          version=$(scripts/check-version.sh "$GITHUB_REF_NAME")
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::tag $GITHUB_REF_NAME is on a commit that is not on main"
+            exit 1
+          fi
+          scripts/release-notes.sh "$version" > release_notes.md
+          cat release_notes.md
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # The action runs the Go tests before it builds; the live tests need the server.
+      - name: Download the Hardcharger server
+        run: echo "HARDCHARGER_SERVER_BINARY=$(scripts/hardcharger-server.sh)" >> "$GITHUB_ENV"
+
+      # Builds the frontend and the backend for every platform, signs the plugin when policy_token
+      # is not empty, packages the zip and its SHA-1, runs Grafana's plugin validator, attests the
+      # zip's provenance and creates a draft GitHub Release with both files attached.
+      - id: build
+        uses: grafana/plugin-actions/build-plugin@build-plugin/v1.2.0
+        with:
+          policy_token: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN }}
+          go-version: '1.27'
+          node-version: '26'
+          attestation: true
+
+      - name: The release has the zip and its checksum, for this version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          assets=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')
+          echo "$assets"
+          for name in "gizmodata-hardcharger-datasource-$VERSION.zip" "gizmodata-hardcharger-datasource-$VERSION.zip.sha1"; do
+            if ! grep -qxF -- "$name" <<<"$assets"; then
+              echo "::error::the release has no $name"
+              exit 1
+            fi
+          done
+
+      - name: Publish the release with the CHANGELOG section as its notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release edit "$GITHUB_REF_NAME" --title "v$VERSION" --notes-file release_notes.md --draft=false --latest
+          gh release view "$GITHUB_REF_NAME" --json isDraft,url,assets --jq '{isDraft, url, assets: [.assets[].name]}'

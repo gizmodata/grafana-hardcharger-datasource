@@ -6,7 +6,7 @@
     "hardcharger",
     "sample"
   ],
-  "timezone": "browser",
+  "timezone": "utc",
   "editable": true,
   "graphTooltip": 1,
   "schemaVersion": 41,
@@ -133,7 +133,7 @@
     },
     {
       "id": 2,
-      "title": "Requests in range",
+      "title": "Requests",
       "description": "",
       "type": "stat",
       "datasource": {
@@ -159,7 +159,20 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -294,7 +307,7 @@
         "uid": "hardcharger-dev"
       },
       "gridPos": {
-        "h": 7,
+        "h": 6,
         "w": 24,
         "x": 0,
         "y": 9
@@ -326,10 +339,10 @@
         "uid": "hardcharger-dev"
       },
       "gridPos": {
-        "h": 5,
+        "h": 4,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 15
       },
       "targets": [
         {

@@ -21,7 +21,7 @@ test.describe('query variables', () => {
     await setSql(
       page,
       page.locator('body'),
-      "SELECT DISTINCT upper(region) AS __text, region AS __value FROM demo.metrics ORDER BY 1"
+      'SELECT DISTINCT upper(region) AS __text, region AS __value FROM demo.metrics ORDER BY 1'
     );
     await variableEditPage.runQuery();
     await expect(variableEditPage).toDisplayPreviews(['EU-WEST', 'US-EAST']);

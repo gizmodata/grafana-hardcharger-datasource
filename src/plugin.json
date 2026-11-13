@@ -48,7 +48,20 @@
         "url": "https://gizmodata.com/hardcharger"
       }
     ],
-    "screenshots": [],
+    "screenshots": [
+      {
+        "name": "A dashboard over Hardcharger",
+        "path": "img/screenshot-dashboard.png"
+      },
+      {
+        "name": "The query editor",
+        "path": "img/screenshot-query.png"
+      },
+      {
+        "name": "The data source's settings",
+        "path": "img/screenshot-config.png"
+      }
+    ],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },

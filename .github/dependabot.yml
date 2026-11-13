@@ -59,6 +59,8 @@ updates:
     allow:
       - dependency-name: 'github.com/grafana/grafana-plugin-sdk-go'
         dependency-type: 'all'
+      - dependency-name: 'github.com/gizmodata/hardcharger-adbc/go/v2'
+        dependency-type: 'all'
     commit-message:
       prefix: 'chore'
       include: 'scope'

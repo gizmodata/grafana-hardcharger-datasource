@@ -1,0 +1,10 @@
+{
+  "extends": "@grafana/tsconfig",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"],
+    "resolveJsonModule": true
+  },
+  "include": ["tests", "dev/screenshots", "playwright.config.ts", ".config/playwright.config.ts", ".config/types"]
+}

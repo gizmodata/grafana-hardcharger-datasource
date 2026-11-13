@@ -263,8 +263,8 @@ func (d *Datasource) queryTag(req *backend.QueryDataRequest, query backend.DataQ
 		"datasource_uid": d.uid,
 		"ref_id":         clip(query.RefID),
 	}
-	if req.PluginContext.OrgID != 0 {
-		tag["org_id"] = req.PluginContext.OrgID
+	if namespace := req.PluginContext.Namespace; namespace != "" {
+		tag["namespace"] = clip(namespace)
 	}
 	if user := req.PluginContext.User; user != nil && user.Login != "" {
 		tag["user"] = clip(user.Login)

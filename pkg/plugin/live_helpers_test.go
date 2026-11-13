@@ -43,7 +43,7 @@ func runQuery(t *testing.T, datasource *Datasource, sql string, options queryOpt
 		ctx = context.Background()
 	}
 	request := &backend.QueryDataRequest{
-		PluginContext: backend.PluginContext{OrgID: 1, PluginID: PluginID},
+		PluginContext: backend.PluginContext{Namespace: "default", PluginID: PluginID},
 		Headers:       options.Headers,
 		Queries: []backend.DataQuery{{RefID: "A", JSON: model, Interval: options.Interval, MaxDataPoints: 1000,
 			TimeRange: backend.TimeRange{From: options.From, To: options.To}}},
@@ -107,22 +107,6 @@ func cell(field *data.Field, row int) any {
 		return nil
 	}
 	return value
-}
-
-// fieldByName finds a frame's field.
-func fieldByName(t *testing.T, frame *data.Frame, name string) *data.Field {
-	t.Helper()
-	for _, field := range frame.Fields {
-		if field.Name == name {
-			return field
-		}
-	}
-	var names []string
-	for _, field := range frame.Fields {
-		names = append(names, field.Name)
-	}
-	t.Fatalf("no field %q among %v", name, names)
-	return nil
 }
 
 func describeFrame(frame *data.Frame) string {

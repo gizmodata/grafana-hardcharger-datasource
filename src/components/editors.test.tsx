@@ -171,7 +171,10 @@ describe('QueryEditorHelp', () => {
     expect(examples.length).toBeGreaterThanOrEqual(3);
     fireEvent.click(examples[1]);
     expect(onClickExample).toHaveBeenCalledWith(
-      expect.objectContaining({ format: 'time_series', rawSql: expect.stringContaining('$__timeGroup(ts, $__interval)') })
+      expect.objectContaining({
+        format: 'time_series',
+        rawSql: expect.stringContaining('$__timeGroup(ts, $__interval)'),
+      })
     );
   });
 });

@@ -614,7 +614,7 @@ func TestLiveQueryTag(t *testing.T) {
 	if err := json.Unmarshal([]byte(tagText), &tag); err != nil {
 		t.Fatalf("the server's query_tag is %q (%v), status %q", tagText, err, status)
 	}
-	want := map[string]any{"app": "grafana", "plugin": PluginID, "datasource_uid": "live-test", "ref_id": "A", "org_id": 1.0,
+	want := map[string]any{"app": "grafana", "plugin": PluginID, "datasource_uid": "live-test", "ref_id": "A", "namespace": "default",
 		"user": "alice", "dashboard_uid": "dash-uid-1", "panel_id": "42", "rule_uid": "rule-7", "from_alert": true}
 	for key, value := range want {
 		if tag[key] != value {
@@ -771,7 +771,7 @@ func TestLiveAccessToken(t *testing.T) {
 // session.
 func TestLiveConcurrentQueries(t *testing.T) {
 	ds := newLiveDatasource(t, plainServer(t), nil, nil)
-	request := &backend.QueryDataRequest{PluginContext: backend.PluginContext{OrgID: 1}}
+	request := &backend.QueryDataRequest{PluginContext: backend.PluginContext{Namespace: "default"}}
 	for index := 0; index < 12; index++ {
 		model, _ := json.Marshal(map[string]any{"rawSql": fmt.Sprintf("SELECT %d AS n, HARDCHARGER_CURRENT_SESSION() AS session", index)})
 		request.Queries = append(request.Queries, backend.DataQuery{RefID: fmt.Sprintf("Q%d", index), JSON: model,
