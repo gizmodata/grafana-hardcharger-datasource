@@ -49,7 +49,7 @@ jobs:
       id-token: write
       attestations: write
     env:
-      HARDCHARGER_VERSION: '2.12.0'
+      HARDCHARGER_VERSION: '2.13.3'
       HARDCHARGER_INSTALL_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7

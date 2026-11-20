@@ -19,6 +19,13 @@ All notable changes to this project are documented here. The format follows
   prints a deprecation line for each to stderr, which is the Grafana server log; with the new names it
   prints none. Settings saved in Grafana don't change.
 
+### Tests
+
+- The live tests find their statements in the server's statement list by a string literal, not a
+  SQL comment: Hardcharger 2.13 records comments masked (`/* *** */`), so six live tests could not
+  find their statements against it. CI and the release gate now test against Hardcharger 2.13.3
+  (from 2.12.0).
+
 ## [1.0.0] - 2026-11-13
 
 The first release: a Grafana data source for [Hardcharger](https://gizmodata.com/hardcharger),
