@@ -60,7 +60,7 @@ Grafana's plugin directory (`/var/lib/grafana/plugins` unless configured otherwi
 and restart Grafana:
 
 ```bash
-unzip gizmodata-hardcharger-datasource-1.0.0.zip -d /var/lib/grafana/plugins
+unzip gizmodata-hardcharger-datasource-1.1.0.zip -d /var/lib/grafana/plugins
 ```
 
 ```ini
@@ -75,13 +75,13 @@ does the same as the `grafana.ini` setting.
 Grafana's command line installs from the zip's URL as well:
 
 ```bash
-grafana cli --pluginUrl https://github.com/gizmodata/grafana-hardcharger-datasource/releases/download/v1.0.0/gizmodata-hardcharger-datasource-1.0.0.zip plugins install gizmodata-hardcharger-datasource
+grafana cli --pluginUrl https://github.com/gizmodata/grafana-hardcharger-datasource/releases/download/v1.1.0/gizmodata-hardcharger-datasource-1.1.0.zip plugins install gizmodata-hardcharger-datasource
 ```
 
 ### With Docker
 
 ```bash
-unzip gizmodata-hardcharger-datasource-1.0.0.zip -d plugins
+unzip gizmodata-hardcharger-datasource-1.1.0.zip -d plugins
 docker run --rm -p 3000:3000 \
   -v "$PWD/plugins/gizmodata-hardcharger-datasource:/var/lib/grafana/plugins/gizmodata-hardcharger-datasource" \
   -e GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=gizmodata-hardcharger-datasource \

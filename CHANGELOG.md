@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-20
+
 ### Changed
 
 - **On the Hardcharger ADBC driver 2.7.0** (`hardcharger-adbc/go/v2`, from 2.5.1; chargewire-adbc 2.5.0
