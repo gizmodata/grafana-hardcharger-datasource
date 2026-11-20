@@ -29,10 +29,15 @@ func uniqueTag(name string) string {
 
 var tagCounter atomic.Int64
 
+// marker is tag as a SQL string literal: it makes a statement findable in the
+// server's list of statements. Not a comment: from Hardcharger 2.13 the
+// server records comments masked (/* *** */), as they may hold secrets.
+func marker(tag string) string { return "'" + tag + "'" }
+
 // endlessQuery never finishes on its own within a test: only a cancel ends
 // it. tag makes it findable in the server's list of statements.
 func endlessQuery(tag string) string {
-	return "SELECT count(*) FROM range(100000000000000) t(i) WHERE hash(i) % 7 = 3 /* " + tag + " */"
+	return "SELECT count(*) FROM range(100000000000000) t(i) WHERE hash(i) % 7 = 3 AND " + marker(tag) + " <> ''"
 }
 
 // statementStatus reads, from the server's own record, the status and
@@ -40,8 +45,8 @@ func endlessQuery(tag string) string {
 // yet).
 func statementStatus(t *testing.T, ds *Datasource, tag string) (status, cancelReason, queryTag string) {
 	t.Helper()
-	frame := mustQuery(t, ds, "SELECT status, cancel_reason, query_tag FROM hardcharger_live_queries() WHERE sql_text LIKE '%/* "+
-		tag+" */%' AND sql_text NOT LIKE '%hardcharger_live_queries%'", queryOptions{})
+	frame := mustQuery(t, ds, "SELECT status, cancel_reason, query_tag FROM hardcharger_live_queries() WHERE sql_text LIKE '%''"+
+		tag+"''%' AND sql_text NOT LIKE '%hardcharger_live_queries%'", queryOptions{})
 	if frame.Rows() == 0 {
 		return "", "", ""
 	}
@@ -223,7 +228,7 @@ func TestLiveRowLimit(t *testing.T) {
 
 	started := time.Now()
 	tag := uniqueTag("live-row-limit")
-	frame := mustQuery(t, limited, "SELECT i, 'row ' || i AS s FROM range(100000000000) t(i) /* "+tag+" */", queryOptions{})
+	frame := mustQuery(t, limited, "SELECT i, 'row ' || i AS s, "+marker(tag)+" AS marker FROM range(100000000000) t(i)", queryOptions{})
 	elapsed := time.Since(started)
 	if frame.Rows() != 1000 {
 		t.Fatalf("got %d rows, want 1000", frame.Rows())
@@ -622,7 +627,7 @@ func TestLiveQueryTag(t *testing.T) {
 	server := plainServer(t)
 	ds := newLiveDatasource(t, server, nil, nil)
 	tagged, untagged := uniqueTag("live-tag"), uniqueTag("live-no-tag")
-	mustQuery(t, ds, "SELECT 1 /* "+tagged+" */", queryOptions{User: "alice", Headers: map[string]string{
+	mustQuery(t, ds, "SELECT 1, "+marker(tagged)+" AS marker", queryOptions{User: "alice", Headers: map[string]string{
 		"http_X-Dashboard-Uid": "dash-uid-1", "http_X-Panel-Id": "42", "http_X-Rule-Uid": "rule-7", "FromAlert": "true"}})
 	status, _, tagText := statementStatus(t, ds, tagged)
 	var tag map[string]any
@@ -638,7 +643,7 @@ func TestLiveQueryTag(t *testing.T) {
 	}
 	// Turned off: the server records no tag.
 	silent := newLiveDatasource(t, server, map[string]any{"tagQueries": false}, nil)
-	mustQuery(t, silent, "SELECT 1 /* "+untagged+" */", queryOptions{User: "alice"})
+	mustQuery(t, silent, "SELECT 1, "+marker(untagged)+" AS marker", queryOptions{User: "alice"})
 	if status, _, tagText := statementStatus(t, ds, untagged); status != "success" || tagText != "" {
 		t.Errorf("with tagging off the server has status %q and tag %q", status, tagText)
 	}
@@ -763,7 +768,7 @@ func TestLiveAccessToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = cnxn.Close(ctx) }()
-	token, err := db.(adbc.GetSetOptionsWithContext).GetOption(ctx, "adbc.chargewire.auth.access_token")
+	token, err := db.(adbc.GetSetOptionsWithContext).GetOption(ctx, "hardcharger.auth.access_token")
 	if err != nil || token == "" {
 		t.Fatalf("no access token from the driver: %q, %v", token, err)
 	}

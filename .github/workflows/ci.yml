@@ -38,7 +38,7 @@ concurrency:
 
 env:
   # The Hardcharger server the live tests run (scripts/hardcharger-server.sh) and the e2e stack's.
-  HARDCHARGER_VERSION: '2.12.0'
+  HARDCHARGER_VERSION: '2.13.3'
   # The released server binary is downloaded from GitHub: authenticate so the download isn't rate
   # limited.
   HARDCHARGER_INSTALL_TOKEN: ${{ github.token }}

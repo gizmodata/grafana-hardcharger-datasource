@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-20
+
+### Changed
+
+- **On the Hardcharger ADBC driver 2.7.0** (`hardcharger-adbc/go/v2`, from 2.5.1; chargewire-adbc 2.5.0
+  from 2.3.1), and with its option names, which follow the
+  [ADBC driver style guide](https://adbc-drivers.org/building-drivers/style-guide.html):
+  `hardcharger.auth.type`, `hardcharger.auth.access_token`, `hardcharger.tls.*`,
+  `hardcharger.query.result_partitions`, `hardcharger.query.timeout_seconds` and `hardcharger.query.tag`
+  (were `adbc.hardcharger.auth_type` and `adbc.chargewire.*`). The driver still reads the old names but
+  prints a deprecation line for each to stderr, which is the Grafana server log; with the new names it
+  prints none. Settings saved in Grafana don't change.
+
+### Tests
+
+- The live tests find their statements in the server's statement list by a string literal, not a
+  SQL comment: Hardcharger 2.13 records comments masked (`/* *** */`), so six live tests could not
+  find their statements against it. CI and the release gate now test against Hardcharger 2.13.3
+  (from 2.12.0).
+
 ## [1.0.0] - 2026-11-13
 
 The first release: a Grafana data source for [Hardcharger](https://gizmodata.com/hardcharger),

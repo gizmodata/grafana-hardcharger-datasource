@@ -169,9 +169,9 @@ func TestDriverOptions(t *testing.T) {
 		return merged
 	}
 	tlsOptions := map[string]string{
-		"adbc.chargewire.tls.skip_verify": "true", "adbc.chargewire.tls.root_certs": "CA-PEM",
-		"adbc.chargewire.tls.server_name": "db.internal", "adbc.chargewire.tls.client_cert": "CERT-PEM",
-		"adbc.chargewire.tls.client_key": "KEY-PEM",
+		"hardcharger.tls.skip_verify": "true", "hardcharger.tls.root_certs": "CA-PEM",
+		"hardcharger.tls.server_name": "db.internal", "hardcharger.tls.client_cert": "CERT-PEM",
+		"hardcharger.tls.client_key": "KEY-PEM",
 	}
 	cases := []struct {
 		name     string
@@ -180,15 +180,15 @@ func TestDriverOptions(t *testing.T) {
 		absent   []string
 	}{
 		{"password", with(nil), merge(tlsOptions, map[string]string{"uri": "hardcharger://db.example.com:31337",
-			"username": "joe", "password": "s3cret-pass"}), []string{"adbc.chargewire.auth.access_token", "adbc.hardcharger.auth_type"}},
+			"username": "joe", "password": "s3cret-pass"}), []string{"hardcharger.auth.access_token", "hardcharger.auth.type"}},
 		{"token", with(map[string]any{"authType": "token"}), merge(tlsOptions, map[string]string{
-			"adbc.chargewire.auth.access_token": "tok-123"}), []string{"username", "password", "adbc.hardcharger.auth_type"}},
+			"hardcharger.auth.access_token": "tok-123"}), []string{"username", "password", "hardcharger.auth.type"}},
 		{"client certificate", with(map[string]any{"authType": "client_certificate"}), merge(tlsOptions, map[string]string{
-			"adbc.hardcharger.auth_type": "client_certificate"}), []string{"username", "password", "adbc.chargewire.auth.access_token"}},
+			"hardcharger.auth.type": "client_certificate"}), []string{"username", "password", "hardcharger.auth.access_token"}},
 		{"without TLS no TLS option is sent", with(map[string]any{"useTLS": false}), map[string]string{
 			"uri": "hardcharger://db.example.com:31337?tls=false", "username": "joe", "password": "s3cret-pass"},
-			[]string{"adbc.chargewire.tls.skip_verify", "adbc.chargewire.tls.root_certs", "adbc.chargewire.tls.server_name",
-				"adbc.chargewire.tls.client_cert", "adbc.chargewire.tls.client_key"}},
+			[]string{"hardcharger.tls.skip_verify", "hardcharger.tls.root_certs", "hardcharger.tls.server_name",
+				"hardcharger.tls.client_cert", "hardcharger.tls.client_key"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -207,8 +207,8 @@ func TestDriverOptions(t *testing.T) {
 					t.Errorf("option %s is set (%q)", key, value)
 				}
 			}
-			if options["adbc.chargewire.statement.result_partitions"] != "1" {
-				t.Errorf("result partitions: %q", options["adbc.chargewire.statement.result_partitions"])
+			if options["hardcharger.query.result_partitions"] != "1" {
+				t.Errorf("result partitions: %q", options["hardcharger.query.result_partitions"])
 			}
 		})
 	}
@@ -252,12 +252,23 @@ func TestDriverAcceptsEveryOption(t *testing.T) {
 			t.Errorf("option %s was never passed to the driver by this test", key)
 		}
 	}
-	// The negative twin: a key the driver doesn't have is refused, so the
-	// loop above would catch a misspelt option.
-	_, err := hardcharger.NewDriver(memory.DefaultAllocator).NewDatabaseWithContext(context.Background(),
-		map[string]string{"uri": "hardcharger://db.example.com", "adbc.chargewire.tls.no_such_option": "x"})
-	if err == nil || !strings.Contains(err.Error(), "adbc.chargewire.tls.no_such_option") {
-		t.Errorf("an unknown option was not refused: %v", err)
+	// Every key is a style-guide name (hardcharger.*) or a standard one: none
+	// of the names from before driver 2.7.0, which print a deprecation
+	// warning into the Grafana server log.
+	for key := range seen {
+		if !strings.HasPrefix(key, "hardcharger.") && key != "uri" && key != "username" && key != "password" {
+			t.Errorf("option %s is not a hardcharger.* option", key)
+		}
+	}
+	// The negative twins: a key the driver doesn't have is refused, under the
+	// style-guide prefix and under an old one, so the loop above would catch a
+	// misspelt option. The error names the key as it was written.
+	for _, key := range []string{"hardcharger.tls.no_such_option", "adbc.chargewire.tls.no_such_option"} {
+		_, err := hardcharger.NewDriver(memory.DefaultAllocator).NewDatabaseWithContext(context.Background(),
+			map[string]string{"uri": "hardcharger://db.example.com", key: "x"})
+		if err == nil || !strings.Contains(strings.ToLower(err.Error()), "unknown") || !strings.Contains(err.Error(), key) {
+			t.Errorf("the unknown option %s was not refused: %v", key, err)
+		}
 	}
 }
 
