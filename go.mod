@@ -6,7 +6,7 @@ require (
 	github.com/apache/arrow-adbc/go/adbc v1.13.0
 	github.com/apache/arrow-go/v18 v18.9.0
 	github.com/gizmodata/hardcharger-adbc/go/v2 v2.7.0
-	github.com/grafana/grafana-plugin-sdk-go v0.299.0
+	github.com/grafana/grafana-plugin-sdk-go v0.300.0
 )
 
 require (
