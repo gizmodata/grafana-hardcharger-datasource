@@ -763,7 +763,7 @@ func TestLiveAccessToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = cnxn.Close(ctx) }()
-	token, err := db.(adbc.GetSetOptionsWithContext).GetOption(ctx, "adbc.chargewire.auth.access_token")
+	token, err := db.(adbc.GetSetOptionsWithContext).GetOption(ctx, "hardcharger.auth.access_token")
 	if err != nil || token == "" {
 		t.Fatalf("no access token from the driver: %q, %v", token, err)
 	}

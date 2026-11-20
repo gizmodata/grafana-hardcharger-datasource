@@ -4,15 +4,15 @@ go 1.27.2
 
 require (
 	github.com/apache/arrow-adbc/go/adbc v1.13.0
-	github.com/apache/arrow-go/v18 v18.8.0
-	github.com/gizmodata/hardcharger-adbc/go/v2 v2.5.1
+	github.com/apache/arrow-go/v18 v18.9.0
+	github.com/gizmodata/hardcharger-adbc/go/v2 v2.7.0
 	github.com/grafana/grafana-plugin-sdk-go v0.299.0
 )
 
 require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	github.com/adbc-drivers/driverbase-go/driverbase v0.0.0-20261109034954-869784ceb17f // indirect
-	github.com/andybalholm/brotli v1.2.8 // indirect
+	github.com/adbc-drivers/driverbase-go/driverbase v0.0.0-20261115080055-809dff5b62b1 // indirect
+	github.com/andybalholm/brotli v1.3.0 // indirect
 	github.com/apache/thrift v0.25.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
@@ -22,7 +22,7 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/fatih/color v1.19.0 // indirect
-	github.com/gizmodata/chargewire-adbc/go/v2 v2.3.1 // indirect
+	github.com/gizmodata/chargewire-adbc/go/v2 v2.5.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/goccy/go-json v0.12.0 // indirect
@@ -36,14 +36,14 @@ require (
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.12 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.1.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.4 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.33.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.34.0 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-plugin v1.8.0 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/jaegertracing/jaeger-idl v0.14.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/jszwedko/go-datemath v0.1.1-0.20260113213115-7f666eef0523 // indirect
-	github.com/klauspost/compress v1.20.4 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.4.2 // indirect
 	github.com/magefile/mage v1.17.2 // indirect
 	github.com/mattetti/filebuffer v1.0.1 // indirect
@@ -86,13 +86,13 @@ require (
 	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.1 // indirect
-	golang.org/x/exp v0.0.0-20261106192419-47ce03d25ef0 // indirect
+	golang.org/x/exp v0.0.0-20261120130654-b6de8d37927a // indirect
 	golang.org/x/mod v0.43.0 // indirect
-	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
-	golang.org/x/tools v0.52.1-0.20261106145633-d407941a339a // indirect
+	golang.org/x/tools v0.53.0 // indirect
 	google.golang.org/genproto v0.0.0-20210630183607-d20f26d13c79 // indirect
 	google.golang.org/grpc v1.85.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect

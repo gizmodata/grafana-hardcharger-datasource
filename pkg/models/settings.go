@@ -16,25 +16,28 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
 
-// Option keys of the Hardcharger ADBC driver and of the Chargewire driver it
-// is built on. They are spelled out here, next to the settings they carry,
-// and each one is checked against the driver by TestDriverAcceptsEveryOption.
+// Option keys of the Hardcharger ADBC driver, named as the ADBC driver style
+// guide asks (hardcharger.*; the driver also reads the adbc.hardcharger.* and
+// adbc.chargewire.* names from before 2.7.0, with a deprecation warning on
+// stderr). They are spelled out here, next to the settings they carry, and
+// each one is checked against the driver by TestDriverAcceptsEveryOption.
 const (
-	optionAuthType         = "adbc.hardcharger.auth_type"
-	optionAccessToken      = "adbc.chargewire.auth.access_token"
-	optionTLSSkipVerify    = "adbc.chargewire.tls.skip_verify"
-	optionTLSRootCerts     = "adbc.chargewire.tls.root_certs"
-	optionTLSClientCert    = "adbc.chargewire.tls.client_cert"
-	optionTLSClientKey     = "adbc.chargewire.tls.client_key"
-	optionTLSServerName    = "adbc.chargewire.tls.server_name"
-	optionResultPartitions = "adbc.chargewire.statement.result_partitions"
+	optionAuthType         = "hardcharger.auth.type"
+	optionAccessToken      = "hardcharger.auth.access_token"
+	optionTLSSkipVerify    = "hardcharger.tls.skip_verify"
+	optionTLSRootCerts     = "hardcharger.tls.root_certs"
+	optionTLSClientCert    = "hardcharger.tls.client_cert"
+	optionTLSClientKey     = "hardcharger.tls.client_key"
+	optionTLSServerName    = "hardcharger.tls.server_name"
+	optionResultPartitions = "hardcharger.query.result_partitions"
 
 	// OptionStatementTimeout is the seconds after which the server cancels a
 	// statement (a statement option).
-	OptionStatementTimeout = "adbc.chargewire.statement.timeout_seconds"
+	OptionStatementTimeout = "hardcharger.query.timeout_seconds"
 	// OptionQueryTag is a JSON object the server records with a statement (a
-	// statement option).
-	OptionQueryTag = "adbc.chargewire.statement.query_tag"
+	// statement option; not the driver's hardcharger.OptionQueryTag, which is
+	// the session's hardcharger.session.query_tag).
+	OptionQueryTag = "hardcharger.query.tag"
 )
 
 // How the data source signs in.
