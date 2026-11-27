@@ -56,8 +56,8 @@ github.com/getkin/kin-openapi v0.153.0 h1:Qo4qWW+Pj8o90LUTE6MDyG5TJAtWnfvrcWOBcW
 github.com/getkin/kin-openapi v0.153.0/go.mod h1:mEZ6Ip3gyqPDokUsJsttZhv3r46/NeH3tGwrFUMcoSE=
 github.com/gizmodata/chargewire-adbc/go/v2 v2.5.0 h1:WORbfzxqM+bbnqMqRo3CNIqtFvEmUcQvgLtjkVYfBhU=
 github.com/gizmodata/chargewire-adbc/go/v2 v2.5.0/go.mod h1:8ORltB2n5t1dk9WXdO707QPG3DoNWoMS8EjgL7YwQLg=
-github.com/gizmodata/hardcharger-adbc/go/v2 v2.7.0 h1:9IcoqZkROWbgR48XBW7D4tman1/7DxBiahQ4CQhymeU=
-github.com/gizmodata/hardcharger-adbc/go/v2 v2.7.0/go.mod h1:6yzman1ehRC27gqcjWX5kNOKTMkCm/28nt3mfRuiT80=
+github.com/gizmodata/hardcharger-adbc/go/v2 v2.7.2 h1:vk7PDyWrHBuKifD0kx3cmmP/zDYUKqLV9gxDI7ZjAvE=
+github.com/gizmodata/hardcharger-adbc/go/v2 v2.7.2/go.mod h1:6yzman1ehRC27gqcjWX5kNOKTMkCm/28nt3mfRuiT80=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/logr v1.4.4 h1:tG4xh9yMsRCAiodLVTxyrkzSZ9+o0L1Kg/+cPVcbP/8=
 github.com/go-logr/logr v1.4.4/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
