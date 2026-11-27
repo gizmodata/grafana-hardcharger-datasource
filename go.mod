@@ -6,7 +6,7 @@ require (
 	github.com/apache/arrow-adbc/go/adbc v1.13.0
 	github.com/apache/arrow-go/v18 v18.9.0
 	github.com/gizmodata/hardcharger-adbc/go/v2 v2.7.0
-	github.com/grafana/grafana-plugin-sdk-go v0.299.0
+	github.com/grafana/grafana-plugin-sdk-go v0.302.0
 )
 
 require (
@@ -63,7 +63,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/prometheus/client_golang v1.25.0 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
-	github.com/prometheus/common v0.73.1 // indirect
+	github.com/prometheus/common v0.74.0 // indirect
 	github.com/prometheus/procfs v0.23.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/unknwon/bra v0.0.0-20200517080246-1e3013ecaff8 // indirect
